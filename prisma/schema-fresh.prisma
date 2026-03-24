@@ -1,0 +1,280 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FamilyStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum RelationType {
+  FATHER
+  MOTHER
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role      @default(USER)
+  createdAt DateTime @default(now())
+
+  family        Family?
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  learnFolders  LearnFolder[]
+  learnPosts    LearnPost[]
+
+  @@map("users")
+}
+
+model Person {
+  id           String   @id @default(cuid())
+  firstName    String
+  middleName   String?
+  lastName     String
+  gender       String
+  isDeceased   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  // Relationships - as parent
+  parentRelationships Relationship[] @relation("ParentRelationship")
+  children            Relationship[] @relation("ChildRelationship")
+
+  // Back-references (one person can be head of one family, father of many, etc.)
+  headOfFamily   Family?   @relation("HeadPerson")
+  fatherOf       Family[]  @relation("FatherPerson")
+  motherOf       Family[]  @relation("MotherPerson")
+  spouse         Spouse?
+  child          Child?
+
+  @@index([firstName])
+  @@index([lastName])
+  @@index([firstName, lastName])
+  @@map("persons")
+}
+
+model Relationship {
+  id           String       @id @default(cuid())
+  parentId     String
+  childId      String
+  relationType RelationType // FATHER or MOTHER
+  createdAt    DateTime     @default(now())
+
+  parent Person @relation("ParentRelationship", fields: [parentId], references: [id])
+  child  Person @relation("ChildRelationship", fields: [childId], references: [id])
+
+  @@unique([parentId, childId, relationType])
+  @@index([parentId])
+  @@index([childId])
+  @@index([relationType])
+  @@map("relationships")
+}
+
+model Family {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+
+  // Head of family (split name fields + person link)
+  firstName           String
+  middleName          String?
+  lastName            String
+  headPersonId        String?   @unique
+
+  // Father information
+  fatherFirstName     String?
+  fatherMiddleName    String?
+  fatherLastName      String?
+  fatherId            String?
+
+  // Mother information
+  motherFirstName     String?
+  motherMiddleName    String?
+  motherLastName      String?
+  motherId            String?
+
+  // Existing fields
+  education           String?
+  occupationType      String?  // Job / Business / Unoccupied
+  occupationLocation  String?
+  gender              String  // Always Male for head
+  maritalStatus       String
+  status              FamilyStatus @default(PENDING)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  headPerson          Person?   @relation("HeadPerson", fields: [headPersonId], references: [id])
+  fatherPerson        Person?   @relation("FatherPerson", fields: [fatherId], references: [id])
+  motherPerson        Person?   @relation("MotherPerson", fields: [motherId], references: [id])
+  spouse              Spouse?
+  children            Child[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([headPersonId])
+  @@index([fatherId])
+  @@index([motherId])
+  @@map("families")
+}
+
+model Spouse {
+  id                  String   @id @default(cuid())
+  familyId            String   @unique
+  family              Family   @relation(fields: [familyId], references: [id])
+
+  // Split name fields
+  firstName           String
+  middleName          String?
+  lastName            String
+
+  // Father information
+  fatherFirstName     String?
+  fatherMiddleName    String?
+  fatherLastName      String?
+
+  // Mother information
+  motherFirstName     String?
+  motherMiddleName    String?
+  motherLastName      String?
+
+  // Person link
+  personId            String?   @unique
+  person              Person?   @relation(fields: [personId], references: [id])
+
+  isDeceased          Boolean  @default(false)
+
+  // Existing fields
+  education           String?
+  occupationType      String?  // Job / Business / Unoccupied / House Wife
+  occupationLocation  String?
+  gender              String  // Always Female
+  createdAt           DateTime @default(now())
+
+  @@index([familyId])
+  @@index([personId])
+  @@map("spouses")
+}
+
+model Child {
+  id                 String   @id @default(cuid())
+  familyId           String
+  family             Family   @relation(fields: [familyId], references: [id])
+
+  // Split name fields
+  firstName          String
+  middleName         String?
+  lastName           String
+
+  // Person link
+  personId           String?   @unique
+  person             Person?   @relation(fields: [personId], references: [id])
+
+  // Existing fields
+  gender             String
+  education          String?
+  createdAt          DateTime @default(now())
+
+  @@index([familyId])
+  @@index([personId])
+  @@map("children")
+}
+
+model Post {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  title        String
+  description  String?
+  imageUrl     String?
+  location     String?
+  likesCount   Int      @default(0)
+  commentsCount Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  comments     Comment[]
+  likes        Like[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
+  parentId  String?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, postId, parentId])
+  @@map("comments")
+}
+
+model Like {
+  id     String @id @default(cuid())
+  userId String
+  postId String
+  user   User   @relation(fields: [userId], references: [id])
+  post   Post   @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model LearnFolder {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  parent      LearnFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    LearnFolder[] @relation("FolderHierarchy")
+  posts       LearnPost[]
+  order       Int          @default(0)
+  createdBy   String?
+  createdByUser User?     @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([parentId])
+  @@map("learn_folders")
+}
+
+model LearnPost {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  folderId    String
+  folder      LearnFolder @relation(fields: [folderId], references: [id])
+  order       Int       @default(0)
+  isPublished Boolean   @default(true)
+  createdBy   String?
+  createdByUser User?   @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([folderId])
+  @@index([order])
+  @@map("learn_posts")
+}

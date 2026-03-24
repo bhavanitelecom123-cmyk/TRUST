@@ -1,0 +1,232 @@
+==================================================
+CASTE COMMUNITY PORTAL - APP CONTEXT
+==================================================
+Last Updated: 2026-03-16
+Status: RUNNING on port 3000
+
+==================================================
+PROJECT OVERVIEW
+==================================================
+Name: caste-community-db
+Description: Caste Community Database Portal
+Purpose: Web application for managing caste community family data with authentication, CRUD operations, and admin features.
+
+==================================================
+TECH STACK
+==================================================
+Framework: Next.js 16.1.6 (App Router)
+Language: TypeScript 5.9.3
+Database: PostgreSQL (Neon/Postgres)
+ORM: Prisma 5.22.0
+Authentication: NextAuth v4.24.13
+Styling: TailwindCSS 4.2.1
+Build Tool: Turbopack (dev) / Next.js (prod)
+Hashing: bcryptjs 3.0.3
+Environment: dotenv 17.3.1
+
+==================================================
+DATABASE SCHEMA (Prisma)
+==================================================
+Models:
+1. User
+   - id (String, primary key, cuid)
+   - email (String, unique)
+   - password (String, hashed with bcrypt)
+   - role (Role enum: USER, ADMIN)
+   - createdAt (DateTime)
+   - Relation: one-to-one with Family
+
+2. Family
+   - id (String, primary key, cuid)
+   - userId (String, unique, FK to User)
+   - headFullName, fatherName?, motherName?
+   - education?, occupationType?, occupationLocation?
+   - gender (always "Male" for head)
+   - maritalStatus (String)
+   - status (FamilyStatus enum: PENDING, ACCEPTED, REJECTED)
+   - createdAt, updatedAt
+   - Relations: one-to-one with Spouse, one-to-many with Children
+
+3. Spouse
+   - id (String, primary key, cuid)
+   - familyId (String, unique, FK)
+   - fullName, fatherName?, motherName?
+   - education?, occupationType?, occupationLocation?
+   - gender (always "Female")
+   - createdAt
+
+4. Child
+   - id (String, primary key, cuid)
+   - familyId (String, FK)
+   - fullName, gender, education?
+   - createdAt
+
+Constraints:
+- One User can have only ONE Family record
+- Family can have ZERO or ONE Spouse
+- Family can have ZERO or MANY Children
+
+==================================================
+API ROUTES
+==================================================
+Authentication:
+- POST /api/auth/register  - User registration
+- GET/POST /api/auth/[...nextauth] - NextAuth handler
+
+Family (Protected):
+- GET  /api/family        - Fetch user's family data
+- POST /api/family        - Create family record
+- PUT  /api/family        - Update family data
+
+Admin (Admin Only):
+- GET    /api/admin/users      - List all users with family data
+- POST   /api/admin/users      - Create new user
+- GET    /api/admin/families   - List all families with filters
+- PUT    /api/admin/families   - Update family status/data
+- POST   /api/admin/families   - Create family for a user
+
+==================================================
+APP STRUCTURE (App Router)
+==================================================
+/app
+  /login               - Login page
+  /register            - Registration page
+  /dashboard           - User dashboard (protected)
+  /family-form         - Family form page (protected)
+  /admin
+    /dashboard         - Admin dashboard (admin only)
+    /users             - User management page (admin only)
+    /families          - Family management page (admin only)
+  /api
+    /auth
+      /register        - Registration API
+      [...nextauth]    - NextAuth handler
+    /family            - Family CRUD APIs
+    /admin
+      /users           - Admin user APIs
+      /families        - Admin family APIs
+
+/components
+  /forms
+    FamilyForm.tsx      - Family creation/editing form
+  /admin
+    AdminUsersClient.tsx - User management UI
+    AdminFamiliesClient.tsx - Family management UI
+  /theme
+    ThemeProvider.tsx   - Dark/light theme provider
+    ThemeToggle.tsx     - Theme toggle button
+  Nav.tsx               - Navigation component
+
+/lib
+  auth.ts               - NextAuth configuration
+  db.ts                 - Prisma client singleton
+  /admin
+    middleware.ts       - Admin authorization middleware
+
+/prisma
+  schema.prisma         - Database schema definition
+  migrations/           - Migration history (if used)
+
+/types
+  index.ts              - TypeScript type definitions
+  next-auth.d.ts        - NextAuth type extensions
+
+==================================================
+ENVIRONMENT VARIABLES (.env)
+==================================================
+DATABASE_URL="postgresql://postgres:admin@localhost:5432/postgres?sslmode=prefer"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="j999MQtjlbzKYjg2H1Dn7Pq7mbvfbFmhBRo1wAOnu7g="
+NEXT_PUBLIC_APP_NAME="Caste Community Portal"
+
+==================================================
+CURRENT RUNNING STATE
+==================================================
+Server: Running (PID: background task bdnrdgi2j)
+Port: 3000
+Local URL: http://localhost:3000
+Network URL: http://192.168.1.65:3000
+Status: Healthy (200 OK responses)
+Hot Reload: Enabled (Turbopack)
+Database: Connected and schema synchronized
+
+Build Info:
+- Next.js dev server with Turbopack
+- Started in ~1.4s
+- Using TypeScript strict mode
+- ESLint configured
+
+==================================================
+RECENT FIXES & CHANGES
+==================================================
+Date: 2026-03-16
+
+Issue: PrismaClientValidationError - "Unknown field `_count` for select statement on model `User`"
+Cause: Incorrect use of `_count` on a one-to-one relation (User.family)
+Fix Applied:
+1. app/admin/users/page.tsx
+   - Changed: _count: { select: { family: true } }
+   - To: family: true
+   - Reason: User has one-to-one relation with Family, not one-to-many
+
+2. app/api/admin/users/route.ts
+   - Applied same fix to GET endpoint
+   - Changed: _count: { select: { family: true } }
+   - To: family: true
+
+3. components/admin/AdminUsersClient.tsx
+   - Updated User interface: family: any | null instead of _count.family: number
+   - Updated display logic: user.family ? "1" : "0"
+
+4. Verified all other files - no other _count issues found
+
+Status: RESOLVED - Admin users page now loads correctly
+
+==================================================
+SECURITY FEATURES
+==================================================
+- Password hashing: bcrypt (12 rounds)
+- Session management: NextAuth v4
+- Authentication: JWT strategy (stateless)
+- Protected routes: Server-side session checks
+- Role-based access: USER and ADMIN roles
+- One family per user constraint
+- CSRF protection via NextAuth
+- Admin middleware for sensitive endpoints
+
+==================================================
+NOTES
+==================================================
+- Each user can submit ONLY ONE family record (enforced at DB level)
+- Spouse section only appears when marital status is "Married"
+- Children can be dynamically added/removed in the form
+- All form fields are validated server-side
+- Admin can approve/reject family statuses
+- .env file should NOT be committed to git
+- Prisma schema needs db push for changes: npx prisma db push
+- Generated Prisma client needs regenerate after schema changes
+
+==================================================
+DEPLOYMENT INFO
+==================================================
+Platform: Vercel (recommended)
+Build Command: npm run build
+Output Directory: .next
+Required Env Vars: DATABASE_URL, NEXTAUTH_URL, NEXTAUTH_SECRET
+Database: Neon PostgreSQL recommended
+
+==================================================
+USEFUL COMMANDS
+==================================================
+npm run dev              - Start dev server with Turbopack
+npm run build            - Build for production
+npm start                - Start production server
+npm run lint             - Run ESLint
+npm run prisma:generate  - Generate Prisma client
+npm run prisma:push      - Push schema to database
+npm run prisma:studio    - Open Prisma Studio (DB viewer)
+npm run prisma:migrate   - Run migrations (if using migrations)
+
+==================================================
+END OF CONTEXT
+==================================================
