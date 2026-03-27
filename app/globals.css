@@ -297,3 +297,66 @@ body {
   background: rgba(200, 200, 255, 0.4);
   pointer-events: none;
 }
+
+/* Print-specific styles for PDF export */
+@media print {
+  /* Force light background and dark text */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide dashboard layout, navbar, headers */
+  nav,
+  header,
+  [class*="navbar"],
+  [class*="Navbar"],
+  [class*="header"],
+  [class*="Header"],
+  [class*="dashboard"] {
+    display: none !important;
+  }
+
+  /* Force all cards to white background with black text */
+  .bg-gray-800,
+  .bg-gray-900,
+  .bg-gray-800\/90,
+  .bg-gray-900\/95,
+  [class*="bg-gray-8"],
+  [class*="bg-gray-9"] {
+    background: white !important;
+    color: black !important;
+    border-color: #e5e7eb !important;
+  }
+
+  /* Force text colors to black */
+  .text-white,
+  .text-gray-100,
+  .text-gray-200,
+  .text-gray-300,
+  .text-gray-400,
+  .dark\:text-white,
+  [class*="text-white"],
+  [class*="text-gray-1"],
+  [class*="text-gray-2"],
+  [class*="text-gray-3"],
+  [class*="text-gray-4"] {
+    color: black !important;
+  }
+
+  /* Hide search/controls and legend in FamilyTree */
+  .family-tree-header,
+  .family-tree-controls,
+  .family-tree-legend,
+  [class*="ZoomControls"],
+  [class*="SearchDropdown"] {
+    display: none !important;
+  }
+
+  /* Remove shadows and borders for cleaner look */
+  [class*="shadow"],
+  [class*="border"] {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}

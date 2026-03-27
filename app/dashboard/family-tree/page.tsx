@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import FamilyTree from "@/components/family/FamilyTree";
@@ -10,7 +11,9 @@ import FamilyTree from "@/components/family/FamilyTree";
 export default function FamilyTreePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { theme } = useTheme();
+  const isPrint = searchParams.get("print") === "true";
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -42,6 +45,18 @@ export default function FamilyTreePage() {
     return null;
   }
 
+  // Print mode: render without dashboard layout for clean PDF
+  if (isPrint) {
+    return (
+      <div className="min-h-screen p-4 md:p-6">
+        <FamilyTree
+          defaultPersonId={searchParams.get("personId") || undefined}
+          printMode={true}
+        />
+      </div>
+    );
+  }
+
   return (
     <DashboardLayout activeItem="family-tree">
       <div className="space-y-4 sm:space-y-6 fade-in">
@@ -55,7 +70,10 @@ export default function FamilyTreePage() {
         </div>
 
         <div className={cardClass + " rounded-xl p-4 sm:p-6"}>
-          <FamilyTree />
+          <FamilyTree
+            defaultPersonId={searchParams.get("personId") || undefined}
+            printMode={false}
+          />
         </div>
       </div>
     </DashboardLayout>
