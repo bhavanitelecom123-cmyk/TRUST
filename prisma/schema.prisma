@@ -8,20 +8,23 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  password     String
-  role         Role          @default(USER)
-  createdBy    String?       @map("created_by")
-  createdAt    DateTime      @default(now())
-  comments     Comment[]
-  family       Family?
-  learnFolders LearnFolder[]
-  learnPosts   LearnPost[]
-  likes        Like[]
-  posts        Post[]
-  creator      User?         @relation("CreatedUsers", fields: [createdBy], references: [id])
-  createdUsers User[]       @relation("CreatedUsers")
+  id             String        @id @default(cuid())
+  email          String        @unique
+  password       String?       // Nullable for OAuth-only and OTP-only accounts
+  googleId       String?       @unique
+  emailVerified  DateTime?
+  image          String?
+  role           Role          @default(USER)
+  createdBy      String?       @map("created_by")
+  createdAt      DateTime      @default(now())
+  comments       Comment[]
+  family         Family?
+  learnFolders   LearnFolder[]
+  learnPosts     LearnPost[]
+  likes          Like[]
+  posts          Post[]
+  creator        User?         @relation("CreatedUsers", fields: [createdBy], references: [id])
+  createdUsers   User[]       @relation("CreatedUsers")
 
   @@map("users")
 }
@@ -229,6 +232,28 @@ model LearnPost {
   @@index([folderId])
   @@index([order])
   @@map("learn_posts")
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
+  @@map("email_verifications")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  email      String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([email, token, expiresAt])
+  @@map("password_reset_tokens")
 }
 
 enum Role {
