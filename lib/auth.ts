@@ -92,6 +92,12 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          // Check if email is verified (skip for Google OAuth users)
+          // For password-based accounts, require email verification
+          if (!user.emailVerified && !user.googleId) {
+            throw new Error("EMAIL_NOT_VERIFIED");
+          }
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password

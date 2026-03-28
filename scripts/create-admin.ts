@@ -13,7 +13,17 @@ async function createAdmin() {
   });
 
   if (existing) {
-    console.log('Admin already exists');
+    console.log('Admin already exists, updating role to ADMIN and marking email verified...');
+    const updated = await prisma.user.update({
+      where: { email },
+      data: {
+        role: 'ADMIN',
+        emailVerified: new Date(),
+        // If user has no password (e.g., was OTP-only), set one
+        ...(existing.password ? {} : { password: hashedPassword })
+      }
+    });
+    console.log('Admin updated:', updated);
     await prisma.$disconnect();
     process.exit(0);
   }
@@ -23,6 +33,7 @@ async function createAdmin() {
       email,
       password: hashedPassword,
       role: 'ADMIN',
+      emailVerified: new Date(), // Admin emails auto-verified
     },
   });
 

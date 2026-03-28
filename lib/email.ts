@@ -188,3 +188,92 @@ export function generateOTP(): number {
 export function generateResetToken(): string {
   return require('crypto').randomBytes(32).toString('hex');
 }
+
+/**
+ * Generate a verification token (64-character hex string)
+ */
+export function generateVerificationToken(): string {
+  return require('crypto').randomBytes(32).toString('hex');
+}
+
+/**
+ * Send email verification email
+ */
+export async function sendEmailVerification(email: string, token: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+
+    const subject = 'Verify Your Email - Caste Community Portal';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">Caste Community Portal</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 40px 20px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
+          <h2 style="color: #111827; margin-top: 0;">Verify Your Email</h2>
+          <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+            Thank you for registering! Please verify your email address by clicking the button below:
+          </p>
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${verifyUrl}"
+               style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">
+              Verify Email
+            </a>
+          </div>
+          <p style="color: #4b5563; font-size: 14px; line-height: 1.6; background: #fef3c7; padding: 12px; border-radius: 6px; border-left: 4px solid #f59e0b;">
+            <strong>Important:</strong> This link will expire in 24 hours. If you did not create this account, please ignore this email.
+          </p>
+          <p style="color: #4b5563; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            If the button above doesn't work, copy and paste this URL into your browser:<br>
+            <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px; display: inline-block; margin-top: 8px; word-break: break-all;">${verifyUrl}</code>
+          </p>
+          <p style="color: #4b5563; font-size: 14px; margin-top: 30px;">
+            Best regards,<br>
+            <strong>Caste Community Portal Team</strong>
+          </p>
+        </div>
+        <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
+    `;
+
+    const text = `
+      Verify Your Email - Caste Community Portal
+
+      Thank you for registering! Please verify your email address by clicking the link below:
+
+      ${verifyUrl}
+
+      Important: This link will expire in 24 hours. If you did not create this account, please ignore this email.
+
+      If the link doesn't work, copy and paste the URL into your browser.
+
+      Best regards,
+      Caste Community Portal Team
+
+      This is an automated message, please do not reply.
+    `;
+
+    const client = getResendClient();
+    const { data, error } = await client.emails.send({
+      from: process.env.RESEND_EMAIL_FROM || 'noreply@castecommunity.com',
+      to: email,
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, error: error.message || 'Failed to send email' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('sendEmailVerification error:', error);
+    return { success: false, error: 'Failed to send email' };
+  }
+}

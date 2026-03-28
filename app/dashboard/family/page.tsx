@@ -131,12 +131,12 @@ export default function FamilyPage() {
     <DashboardLayout activeItem="family">
       <div className="space-y-4 sm:space-y-6 fade-in">
         {/* Welcome Message */}
-        <div>
+        {/* <div>
           <h1 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-2`}>Family Record</h1>
           <p className={`text-sm sm:text-base ${textSecondary}`}>
             Welcome back, {session.user?.email}
           </p>
-        </div>
+        </div> */}
 
         {/* Success Message */}
         {message && (

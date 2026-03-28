@@ -60,14 +60,14 @@ export default function FamilyTreePage() {
   return (
     <DashboardLayout activeItem="family-tree">
       <div className="space-y-4 sm:space-y-6 fade-in">
-        <div>
+        {/* <div>
           <h1 className={`text-2xl sm:text-3xl font-bold ${textPrimary} mb-2`}>
             Family Tree
           </h1>
           <p className={`text-sm sm:text-base ${textSecondary}`}>
             Visualize your family relationships across generations. Search any person to start.
           </p>
-        </div>
+        </div> */}
 
         <div className={cardClass + " rounded-xl p-4 sm:p-6"}>
           <FamilyTree

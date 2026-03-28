@@ -237,12 +237,19 @@ model LearnPost {
 model EmailVerification {
   id        String   @id @default(cuid())
   email     String
-  otp       String
+  otp       String?
+  token     String?   @unique
+  type      VerificationType
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   @@index([email, expiresAt])
   @@map("email_verifications")
+}
+
+enum VerificationType {
+  OTP
+  EMAIL_VERIFICATION
 }
 
 model PasswordResetToken {

@@ -23,6 +23,8 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
     const msg = searchParams.get("message");
@@ -84,6 +86,10 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          setError("Your email has not been verified yet. Please check your inbox for the verification email, or request a new one.");
+          return;
+        }
         setError("Invalid email or password");
         return;
       }
@@ -165,6 +171,38 @@ export default function LoginPage() {
     setError("");
   };
 
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+
+    setResendLoading(true);
+    setResendMessage("");
+    setError("");
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setResendMessage(data.error || "Failed to resend verification email");
+        return;
+      }
+
+      setResendMessage(data.message || "Verification email sent. Please check your inbox.");
+    } catch (err) {
+      setResendMessage("Network error. Please try again.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className={`w-full max-w-md ${theme === "dark" ? "bg-gray-800 border border-gray-700" : "bg-white"} rounded-2xl shadow-xl overflow-hidden fade-in`}>
@@ -204,6 +242,22 @@ export default function LoginPage() {
           {error && (
             <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm border border-red-200 dark:border-red-800">
               {error}
+              {error.includes("verify your email") && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  className="mt-2 text-sm underline hover:no-underline font-medium"
+                >
+                  {resendLoading ? "Sending..." : "Resend verification email"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {resendMessage && !error && (
+            <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm border border-green-200 dark:border-green-800">
+              {resendMessage}
             </div>
           )}
 
