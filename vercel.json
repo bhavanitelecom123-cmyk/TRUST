@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "PRISMA_CLI_BINARY_TARGETS": "native"
+  }
+}
